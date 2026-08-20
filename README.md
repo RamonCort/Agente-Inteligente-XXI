@@ -1,4 +1,4 @@
-# Proyecto Base
+# Agente 
 
 Proyecto base con la misma estructura que Asteroids para reutilizar en un nuevo juego.
 
@@ -20,5 +20,5 @@ make
 ## Ejecutar
 
 ```bash
-./bin/ProyectoBase
+./bin/Agente
 ```
