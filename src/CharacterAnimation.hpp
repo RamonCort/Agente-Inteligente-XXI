@@ -48,6 +48,17 @@ public:
         return animationCompleted;
     }
 
+    void showLastFrame() {
+        showFrame(animationFrameCount - 1);
+    }
+
+    void showFrame(unsigned int frame) {
+        currentFrame = frame < animationFrameCount ? frame : animationFrameCount - 1;
+        animationCompleted = true;
+        elapsedTime = 0.f;
+        updateFrameRect();
+    }
+
     void setAnimation(const std::string& imagePath, unsigned int newFrameCount, unsigned int newFirstFrame = 0, bool shouldLoop = false) {
         texture.loadFromFile(imagePath);
         sprite.setTexture(texture);

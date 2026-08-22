@@ -15,8 +15,11 @@ private:
     void update(float deltaTime);
     void render();
     void nextAnimation();
+    void showDirection(bool facingRight);
 
     sf::RenderWindow window;
+    sf::Texture backgroundTexture;
+    sf::Sprite background;
     CharacterAnimation player;
     sf::Clock clock;
     unsigned int animationIndex = 0;
