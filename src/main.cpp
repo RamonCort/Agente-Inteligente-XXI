@@ -10,6 +10,13 @@ Game::Game()
         1200.f / backgroundTexture.getSize().x,
         900.f / backgroundTexture.getSize().y
     );
+    fondoMusic.openFromFile("assets/music/Fondo.ogg");
+    fondoMusic.setLoop(true);
+    fondoMusic.play();
+    laboratorioMusic.openFromFile("assets/music/Laboratorio.ogg");
+    laboratorioMusic.setLoop(true);
+    laboratorioMusic.play();
+    evolucionMusic.openFromFile("assets/music/Evolucion.ogg");
         player.setPosition(600.f, 450.f);
 }
 
@@ -20,6 +27,8 @@ void Game::processEvents() {
             window.close();
         }
         if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Enter) {
+            evolucionMusic.stop();
+            evolucionMusic.play();
             nextAnimation();
         }
         if (event.type == sf::Event::KeyPressed &&
@@ -37,13 +46,13 @@ void Game::processEvents() {
             !sf::Keyboard::isKeyPressed(sf::Keyboard::Right) &&
             !sf::Keyboard::isKeyPressed(sf::Keyboard::Up) &&
             !sf::Keyboard::isKeyPressed(sf::Keyboard::Down)) {
-            if (animationIndex == 6) {
+            if (animationIndex == 4) {
                 player.setAnimation("assets/images/E1.png", 7, 0, false);
                 player.showLastFrame();
-            } else if (animationIndex == 7) {
+            } else if (animationIndex == 5) {
                 player.setAnimation("assets/images/E2.png", 5, 0, false);
                 player.showFrame(4);
-            } else if (animationIndex == 8) {
+            } else if (animationIndex == 6) {
                 player.setAnimation("assets/images/E3.png", 6, 0, false);
                 player.showFrame(5);
             } else {
@@ -55,17 +64,17 @@ void Game::processEvents() {
 }
 
 void Game::showDirection(bool facingRight) {
-    if (animationIndex == 6 && facingRight) {
+    if (animationIndex == 4 && facingRight) {
         player.setAnimation("assets/images/C1.png", 7, 0, true);
-    } else if (animationIndex == 6) {
+    } else if (animationIndex == 4) {
         player.setAnimation("assets/images/CI1.png", 7, 0, true);
-    } else if (animationIndex == 7 && facingRight) {
+    } else if (animationIndex == 5 && facingRight) {
         player.setAnimation("assets/images/C2.png", 6, 0, true);
-    } else if (animationIndex == 7) {
+    } else if (animationIndex == 5) {
         player.setAnimation("assets/images/CI2.png", 7, 0, true);
-    } else if (animationIndex == 8 && facingRight) {
+    } else if (animationIndex == 6 && facingRight) {
         player.setAnimation("assets/images/C3.png", 6, 0, true);
-    } else if (animationIndex == 8) {
+    } else if (animationIndex == 6) {
         player.setAnimation("assets/images/CI3.png", 7, 0, true);
     } else if (facingRight) {
         player.setAnimation("assets/images/S0.png", 7, 1, true);
@@ -80,13 +89,13 @@ void Game::nextAnimation() {
         "assets/images/S1.png",
         "assets/images/S2.png",
         "assets/images/S0.png",
-        "assets/images/S3.png",
-        "assets/images/S4.png",
         "assets/images/E1.png",
         "assets/images/E2.png",
         "assets/images/E3.png",
+        "assets/images/S3.png",
+        "assets/images/S4.png",
     };
-    static const unsigned int frameCounts[] = {7, 8, 6, 7, 8, 8, 7, 5, 6};
+    static const unsigned int frameCounts[] = {7, 8, 6, 7, 7, 5, 6, 8, 8};
     static const unsigned int firstFrames[] = {1, 1, 1, 1, 0, 0, 0, 0, 0};
     static const bool loopAnimations[] = {true, false, false, true, false, false, false, false, false};
 
@@ -111,7 +120,7 @@ void Game::update(float deltaTime) {
     }
 
     player.update(deltaTime);
-    if ((animationIndex == 2 || animationIndex == 4) && player.hasCompletedCycle()) {
+    if ((animationIndex == 2 || animationIndex == 7) && player.hasCompletedCycle()) {
         nextAnimation();
     }
 }

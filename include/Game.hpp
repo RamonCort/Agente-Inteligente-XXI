@@ -20,6 +20,9 @@ private:
     sf::RenderWindow window;
     sf::Texture backgroundTexture;
     sf::Sprite background;
+    sf::Music fondoMusic;
+    sf::Music laboratorioMusic;
+    sf::Music evolucionMusic;
     CharacterAnimation player;
     sf::Clock clock;
     unsigned int animationIndex = 0;
