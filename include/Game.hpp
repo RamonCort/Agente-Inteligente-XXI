@@ -3,6 +3,7 @@
 #include <SFML/Graphics.hpp>
 #include <SFML/Audio.hpp>
 #include <string>
+#include "../src/CharacterAnimation.hpp"
 
 class Game {
 public:
@@ -13,8 +14,10 @@ private:
     void processEvents();
     void update(float deltaTime);
     void render();
+    void nextAnimation();
 
     sf::RenderWindow window;
-    sf::CircleShape player;
+    CharacterAnimation player;
     sf::Clock clock;
+    unsigned int animationIndex = 0;
 };
