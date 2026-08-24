@@ -59,6 +59,11 @@ public:
         updateFrameRect();
     }
 
+    void setScaleToHeight(float height) {
+        const float scale = height / texture.getSize().y;
+        sprite.setScale(scale, scale);
+    }
+
     void setAnimation(const std::string& imagePath, unsigned int newFrameCount, unsigned int newFirstFrame = 0, bool shouldLoop = false) {
         texture.loadFromFile(imagePath);
         sprite.setTexture(texture);
@@ -66,6 +71,7 @@ public:
         firstFrame = newFirstFrame;
         animationFrameCount = frameCount - firstFrame;
         loopAnimation = shouldLoop;
+        sprite.setScale(1.f, 1.f);
         currentFrame = 0;
         animationCompleted = false;
         elapsedTime = 0.f;
