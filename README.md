@@ -1,6 +1,6 @@
 # Agente 
 
-Proyecto base con la misma estructura que Asteroids para reutilizar en un nuevo juego.
+
 
 ## Estructura
 
@@ -20,5 +20,5 @@ make
 ## Ejecutar
 
 ```bash
-./bin/Agente
+./bin/Personaje
 ```
