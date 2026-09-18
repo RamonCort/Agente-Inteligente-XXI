@@ -22,6 +22,7 @@ Game::Game()
     laboratorioMusic.play();
     evolucionMusic.openFromFile("assets/music/Evolucion.ogg");
     desmoronamientoMusic.openFromFile("assets/music/Desmoronamiento.ogg");
+    loadNavigationMap();
     setupItems();
     setStageImage("assets/images/Et1.jpg");
     player.showFrame(0);
@@ -29,6 +30,138 @@ Game::Game()
     for (std::size_t charcoIndex = 0; charcoIndex < charcos.size(); ++charcoIndex) {
         charcosEnContacto[charcoIndex] = touchesItemCenter(charcos[charcoIndex]);
     }
+}
+
+void Game::loadNavigationMap() {
+    if (!navigationImage.loadFromFile("assets/images/A_Estrella.jpg")) {
+        return;
+    }
+
+    const unsigned int columns = 1200 / navigationCellSize;
+    const unsigned int rows = 900 / navigationCellSize;
+    navigationGrid.assign(rows, std::vector<int>(columns, 1));
+    const sf::Vector2u imageSize = navigationImage.getSize();
+
+    for (unsigned int row = 0; row < rows; ++row) {
+        for (unsigned int column = 0; column < columns; ++column) {
+            unsigned int blackPixels = 0;
+            unsigned int sampledPixels = 0;
+            const unsigned int left = column * imageSize.x / columns;
+            const unsigned int right = (column + 1) * imageSize.x / columns;
+            const unsigned int top = row * imageSize.y / rows;
+            const unsigned int bottom = (row + 1) * imageSize.y / rows;
+            for (unsigned int y = top; y < bottom; y += 2) {
+                for (unsigned int x = left; x < right; x += 2) {
+                    ++sampledPixels;
+                    const sf::Color pixel = navigationImage.getPixel(x, y);
+                    if (pixel.r < 80 && pixel.g < 80 && pixel.b < 80) {
+                        ++blackPixels;
+                    }
+                }
+            }
+            navigationGrid[row][column] = blackPixels * 5 > sampledPixels ? 0 : 1;
+        }
+    }
+
+    // Se amplían las paredes para que el sprite no las atraviese con sus bordes.
+    AStar::Grid safeGrid = navigationGrid;
+    const int horizontalMargin = 1;
+    const int verticalMargin = 2;
+    for (int row = 0; row < static_cast<int>(navigationGrid.size()); ++row) {
+        for (int column = 0; column < static_cast<int>(navigationGrid[row].size()); ++column) {
+            for (int y = -verticalMargin; y <= verticalMargin; ++y) {
+                for (int x = -horizontalMargin; x <= horizontalMargin; ++x) {
+                    const sf::Vector2i neighbor(column + x, row + y);
+                    const bool inside = neighbor.y >= 0 &&
+                        neighbor.y < static_cast<int>(navigationGrid.size()) &&
+                        neighbor.x >= 0 &&
+                        neighbor.x < static_cast<int>(navigationGrid[neighbor.y].size());
+                    if (!inside || navigationGrid[neighbor.y][neighbor.x] == 0) {
+                        safeGrid[row][column] = 0;
+                    }
+                }
+            }
+        }
+    }
+    navigator.setGrid(safeGrid);
+}
+
+sf::Vector2i Game::worldToCell(const sf::Vector2f& position) const {
+    return {static_cast<int>(position.x / navigationCellSize),
+            static_cast<int>(position.y / navigationCellSize)};
+}
+
+sf::Vector2f Game::cellToWorld(sf::Vector2i cell) const {
+    return {(cell.x + 0.5f) * navigationCellSize,
+            (cell.y + 0.5f) * navigationCellSize};
+}
+
+sf::Vector2f Game::getFeetPosition() const {
+    const sf::FloatRect bounds = player.getSprite().getGlobalBounds();
+    return {bounds.left + bounds.width / 2.f, bounds.top + bounds.height};
+}
+
+void Game::setFeetPosition(const sf::Vector2f& feetPosition) {
+    const sf::FloatRect bounds = player.getSprite().getGlobalBounds();
+    player.setPosition(feetPosition.x, feetPosition.y - bounds.height / 2.f);
+}
+
+void Game::setDestination(const sf::Vector2f& destination) {
+    if (movementLocked || navigationGrid.empty()) {
+        return;
+    }
+
+    AStar::Grid routeGrid = navigationGrid;
+    for (std::size_t charcoIndex = 0; charcoIndex < charcos.size(); ++charcoIndex) {
+        if (!charcosVisibles[charcoIndex]) {
+            continue;
+        }
+        const sf::FloatRect charcoBounds = charcos[charcoIndex].getGlobalBounds();
+        for (std::size_t row = 0; row < routeGrid.size(); ++row) {
+            for (std::size_t column = 0; column < routeGrid[row].size(); ++column) {
+                const sf::Vector2f cellCenter = cellToWorld({
+                    static_cast<int>(column), static_cast<int>(row)});
+                if (charcoBounds.contains(cellCenter)) {
+                    routeGrid[row][column] = 0;
+                }
+            }
+        }
+    }
+    navigator.setGrid(routeGrid);
+
+    sf::Vector2i start = navigator.nearestWalkable(worldToCell(getFeetPosition()));
+    sf::Vector2i target = navigator.nearestWalkable(worldToCell(destination));
+    if (start.x < 0 || target.x < 0) {
+        currentPath.clear();
+        return;
+    }
+    currentPath = navigator.findPath(start, target);
+    pathIndex = currentPath.size() > 1 ? 1 : 0;
+    if (!currentPath.empty()) {
+        showDirection(cellToWorld(currentPath.back()).x >= getFeetPosition().x);
+    }
+}
+
+void Game::updateAutomaticMovement(float deltaTime) {
+    if (movementLocked || pathIndex >= currentPath.size()) {
+        return;
+    }
+    const sf::Vector2f position = getFeetPosition();
+    const sf::Vector2f target = cellToWorld(currentPath[pathIndex]);
+    const sf::Vector2f difference = target - position;
+    const float distance = std::sqrt(difference.x * difference.x + difference.y * difference.y);
+    const float step = 200.f * deltaTime;
+    if (distance <= step) {
+        setFeetPosition(target);
+        ++pathIndex;
+        if (pathIndex == currentPath.size()) {
+            currentPath.clear();
+            player.setAnimation("assets/images/S1.png", 8, 0, false);
+            player.showFrame(0);
+        }
+        return;
+    }
+    player.move(difference.x / distance * step, difference.y / distance * step);
 }
 
 void Game::setStageImage(const std::string& imagePath) {
@@ -92,7 +225,24 @@ void Game::placeRandomly(sf::Sprite& item) {
     static std::mt19937 generator(randomDevice());
     static std::uniform_real_distribution<float> horizontal(30.f, 1170.f);
     static std::uniform_real_distribution<float> vertical(30.f, 870.f);
-    item.setPosition(horizontal(generator), vertical(generator));
+    for (unsigned int attempt = 0; attempt < 1000; ++attempt) {
+        const sf::Vector2f position(horizontal(generator), vertical(generator));
+        const sf::Vector2i cell = worldToCell(position);
+        if (cell.y >= 0 && cell.y < static_cast<int>(navigationGrid.size()) &&
+            cell.x >= 0 && cell.x < static_cast<int>(navigationGrid[cell.y].size()) &&
+            navigationGrid[cell.y][cell.x] == 1) {
+            item.setPosition(position);
+            return;
+        }
+    }
+    for (std::size_t row = 0; row < navigationGrid.size(); ++row) {
+        for (std::size_t column = 0; column < navigationGrid[row].size(); ++column) {
+            if (navigationGrid[row][column] == 1) {
+                item.setPosition(cellToWorld({static_cast<int>(column), static_cast<int>(row)}));
+                return;
+            }
+        }
+    }
 }
 
 void Game::updateItems(float deltaTime) {
@@ -236,6 +386,11 @@ void Game::processEvents() {
         if (event.type == sf::Event::Closed) {
             window.close();
         }
+        if (event.type == sf::Event::MouseButtonPressed &&
+            event.mouseButton.button == sf::Mouse::Left) {
+            setDestination(window.mapPixelToCoords(
+                {event.mouseButton.x, event.mouseButton.y}));
+        }
         if (event.type == sf::Event::KeyPressed &&
             (event.key.code == sf::Keyboard::Right || event.key.code == sf::Keyboard::Up)) {
             showDirection(true);
@@ -376,6 +531,7 @@ void Game::update(float deltaTime) {
     const float movementSpeed = 200.f;
 
     if (!movementLocked) {
+        updateAutomaticMovement(deltaTime);
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::Left)) {
             player.move(-movementSpeed * deltaTime, 0.f);
         }

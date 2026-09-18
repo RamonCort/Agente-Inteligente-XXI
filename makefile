@@ -1,6 +1,6 @@
 CXX := c++
 EXE := bin/ProyectoBase
-SRC := src/main.cpp
+SRC := src/main.cpp src/AStar.cpp
 
 .PHONY: all clean run
 

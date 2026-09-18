@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 #include "../src/CharacterAnimation.hpp"
+#include "AStar.hpp"
 
 class Game {
 public:
@@ -28,6 +29,13 @@ private:
     bool touchesItemCenter(const sf::Sprite& item) const;
     void setStageImage(const std::string& imagePath);
     void resetCycle();
+    void loadNavigationMap();
+    void setDestination(const sf::Vector2f& destination);
+    void updateAutomaticMovement(float deltaTime);
+    sf::Vector2i worldToCell(const sf::Vector2f& position) const;
+    sf::Vector2f cellToWorld(sf::Vector2i cell) const;
+    sf::Vector2f getFeetPosition() const;
+    void setFeetPosition(const sf::Vector2f& feetPosition);
 
     sf::RenderWindow window;
     sf::Texture backgroundTexture;
@@ -65,4 +73,10 @@ private:
     CharacterAnimation player;
     sf::Clock clock;
     unsigned int animationIndex = 0;
+    AStar navigator;
+    AStar::Grid navigationGrid;
+    std::vector<sf::Vector2i> currentPath;
+    std::size_t pathIndex = 0;
+    sf::Image navigationImage;
+    static constexpr unsigned int navigationCellSize = 16;
 };
